@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern":
+  [
+    "xsx",
+    "xsx",
+    "aaa"
+  ],
+  "key":
+  {
+    "x":
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    "s": {
+      "item": "minecraft:glass_pane",
+      "data": 32767
+    },
+    "a":
+    {
+      "item": "minecraft:planks",
+      "data": 32767
+    }
+  },
+  "result":
+  {
+    "item": "automationhelpers:itemfluidbuffer"
+  }
+}
