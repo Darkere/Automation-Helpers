@@ -1,0 +1,85 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+repositories {
+    maven { // The repo from which to get waila
+        name "Mobius Repo"
+        url "http://tehnut.info/maven"
+    }
+    maven { // JEI
+        url "http://dvs1.progwml6.com/files/maven"
+    }
+    maven { // IntWheel
+        url "http://maven.k-4u.nl"
+    }
+    maven { // TOP
+        name 'tterrag maven'
+        url "http://maven.tterrag.com/"
+    }
+    maven {
+        name = "CoFH Maven"
+        url = "http://maven.covers1624.net"
+    }
+	maven {
+		name "Raoulvdberge"
+		url  "https://repo.raoulvdberge.com/"
+	}
+}
+
+version = "0.0.1"
+group= "darkere.automationhelpers"
+archivesBaseName = "automationhelpers"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+minecraft {
+    version = "1.12.2-14.23.5.2784"
+    runDir = "run"
+    useDepAts = true
+    mappings = "stable_39"
+
+    replaceIn "RS.java"
+    replace "@version@", project.version
+}
+
+dependencies {
+    deobfCompile "mezz.jei:jei_1.12.2:4.15.0.269"
+    //deobfCompile "mcp.mobius.waila: 1.8.26-B41_1.12.2"
+    deobfCompile "mcjty.theoneprobe:TheOneProbe-1.12:1.12-1.4.28-17"
+    deobfCompile "com.github.mcjty:intwheel:1.12-1.2.7"
+	//deobfCompile "refinedstorage:refinedstorage:1.6.13-373"
+	//deobfCompile "cofh:ThermalExpansion:1.12.2-5.5.3.41-deobf.jar"
+}
+
+processResources
+{
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+
+        // replace version and mcversion
+        expand 'version':project.version, 'mcversion':project.minecraft.version
+    }
+
+    // copy everything else, thats not the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}

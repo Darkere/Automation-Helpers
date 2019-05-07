@@ -1,0 +1,15 @@
+[
+{
+  "modid": "automationhelpers",
+  "name": "Automation Helpers",
+  "description": "Just a few Automation helpers",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Darkere"],
+  "credits": "Darkere",
+  "logoFile": "",
+  "screenshots": []
+}
+]

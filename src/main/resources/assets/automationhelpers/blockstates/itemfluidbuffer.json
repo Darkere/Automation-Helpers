@@ -1,0 +1,15 @@
+{
+  "forge_marker": 1,
+  "defaults": {
+    "model": "cube_column",
+    "textures": {
+      "side": "automationhelpers:blocks/itemfluidbufferside",
+      "end": "automationhelpers:blocks/itemfluidbuffertop"
+    }
+  },
+  "variants": {
+    "normal": [{}],
+    "inventory": [{}]
+
+  }
+}
