@@ -1,8 +1,8 @@
 package darkere.automationhelpers.OrderedHopper;
 
+import darkere.automationhelpers.Utils.MyPair;
 import darkere.automationhelpers.network.Messages;
 import darkere.automationhelpers.network.PacketFilter;
-import javafx.util.Pair;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryHelper;
@@ -33,16 +33,15 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
     public static final int SIZE = 9;
 
     private ItemStack sender;
-    private boolean changed;
     private int slot, foreignslot, currentslot;
     private int timer;
     private int strike = 0;
     private boolean run = false,active = true;
     private boolean set = false;
     private boolean enoughSpace, slotfound;
-    private Pair<Integer, ItemStack> tempPair;
+    private MyPair tempPair;
     HashMap<Integer, ItemStack> lockedItems= new HashMap<>();
-    private Queue<Pair<Integer, ItemStack>> insertSlotQueue = new LinkedList<>();
+    private Queue<MyPair> insertSlotQueue = new LinkedList<>();
     private ItemStackHandler itemStackHandler;
     private Rmode currentMode = Rmode.roff;
     private int activeTimer =0;
@@ -101,13 +100,6 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
                 lockedItems.put(item.getInteger("Slot"),new ItemStack(item));
             }
         }
-
-
-
-
-
-
-       // TileOrderedHopper.this.markDirty();
 
 
 
@@ -271,7 +263,7 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
                             int foreignslots = handler.getSlots();
                             for (foreignslot = 0; foreignslot < foreignslots; foreignslot++) {
                                 if (handler.insertItem(foreignslot, sender, true).equals(ItemStack.EMPTY)) {
-                                    insertSlotQueue.add(new Pair<>(foreignslot, sender));
+                                    insertSlotQueue.add(new MyPair(foreignslot, sender));
                                     slotfound = true;
                                     break;
                                 }
@@ -291,7 +283,7 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
                             if (!itemStackHandler.getStackInSlot(slot).equals(ItemStack.EMPTY)) {
                                 tempPair = insertSlotQueue.poll();
                                 if (tempPair != null) {
-                                    pushItems(handler, tempPair.getKey(), tempPair.getValue(), slot);
+                                    pushItems(handler, tempPair.getX(), tempPair.getStack(), slot);
                                 }
                             }
                         }

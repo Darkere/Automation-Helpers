@@ -2,12 +2,24 @@
   "type": "minecraft:crafting_shaped",
   "pattern":
   [
-    "xsx",
-    "xsx",
-    "aaa"
+    "xgx",
+    "qsq",
+    "aca"
   ],
   "key":
   {
+    "g":
+    {
+      "item": "minecraft:light_weighted_pressure_plate"
+    },
+    "c":
+    {
+      "item": "minecraft:chest"
+    },
+    "q":
+    {
+      "item": "minecraft:quartz"
+    },
     "x":
     {
       "item": "minecraft:iron_ingot"
@@ -18,7 +30,7 @@
     },
     "a":
     {
-      "item": "minecraft:planks",
+      "item": "minecraft:heavy_weighted_pressure_plate",
       "data": 32767
     }
   },

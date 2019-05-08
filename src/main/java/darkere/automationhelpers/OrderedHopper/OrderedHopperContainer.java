@@ -12,6 +12,7 @@ import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.List;
 public class OrderedHopperContainer extends Container {
 
     private TileOrderedHopper te;
-    public ArrayList<Pair> slotpositions = new ArrayList<>(te.SIZE);
+    public ArrayList<Point> slotpositions = new ArrayList<>(te.SIZE);
 
     public OrderedHopperContainer(IInventory playerInventory, TileOrderedHopper te) {
         this.te = te;
@@ -57,13 +58,13 @@ public class OrderedHopperContainer extends Container {
         int slotIndex = 0;
         for (int i = 0; i < itemHandler.getSlots(); i++) {
             addSlotToContainer(new SlotItemHandler(itemHandler, slotIndex, x, y));
-            addSlottoList(slotIndex,new Pair<Integer,Integer>(x,y));
+            addSlottoList(slotIndex,new Point(x,y));
             slotIndex++;
             x += 18;
         }
     }
 
-    private void addSlottoList(int slotIndex, Pair<Integer, Integer> xy) {
+    private void addSlottoList(int slotIndex, Point xy) {
         slotpositions.add(xy);
     }
      public List<IContainerListener> getListeners(){
@@ -100,7 +101,7 @@ public class OrderedHopperContainer extends Container {
     public boolean canInteractWith(EntityPlayer playerIn) {
         return te.canInteractWith(playerIn);
     }
-    public ArrayList<Pair> getSlotpositions(){
+    public ArrayList<Point> getSlotpositions(){
         return slotpositions;
     }
 

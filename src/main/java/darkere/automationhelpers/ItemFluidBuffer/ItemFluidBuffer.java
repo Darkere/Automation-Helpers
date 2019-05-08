@@ -27,7 +27,7 @@ public class ItemFluidBuffer extends Block implements ITileEntityProvider {
     public static final int GUI_ID = 2;
     private boolean bucket = false;
     public ItemFluidBuffer() {
-        super(Material.ROCK);
+        super(Material.IRON);
         setRegistryName(RLITEMFLUIDBUFFER);
         setTranslationKey(automationhelpers.MODID+".ItemFluidBuffer");
 

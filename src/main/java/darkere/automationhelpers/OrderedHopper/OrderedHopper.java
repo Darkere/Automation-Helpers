@@ -26,7 +26,7 @@ public class OrderedHopper extends Block implements ITileEntityProvider {
     public static final ResourceLocation RLOrderedHopper = new ResourceLocation(automationhelpers.MODID, "orderedhopper");
 
     public OrderedHopper() {
-        super(Material.ROCK);
+        super(Material.IRON);
         setRegistryName(RLOrderedHopper);
         setTranslationKey(automationhelpers.MODID+".orderedhopper");
         setHarvestLevel("pickaxe",2);

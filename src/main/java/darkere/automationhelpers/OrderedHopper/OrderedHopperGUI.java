@@ -13,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ public class OrderedHopperGUI extends GuiContainer{
     private TileOrderedHopper tile;
     private OrderedHopperContainer container;
     HashMap<Integer, ItemStack> lockeditems;
-    public ArrayList<Pair> slotpositions;
+    public ArrayList<Point> slotpositions;
     public int guiLeftFilterSlot;
     public int guiTopFilterSlot;
     GuiButtonExt rememberButton,setButton,redstoneButton;
@@ -90,8 +91,8 @@ public class OrderedHopperGUI extends GuiContainer{
         for (int i = 0; i < tile.SIZE; i++) {
             if (lockeditems.containsKey(i)) {
                 mc.getTextureManager().bindTexture(background);
-                slotposX = guiLeftFilterSlot + (int) slotpositions.get(i).getKey();
-                slotposY = guiTopFilterSlot + (int) slotpositions.get(i).getValue();
+                slotposX = guiLeftFilterSlot + (int) slotpositions.get(i).getX();
+                slotposY = guiTopFilterSlot + (int) slotpositions.get(i).getY();
 
                 itemRender.renderItemIntoGUI(lockeditems.get(i),slotposX,slotposY);
                 GlStateManager.pushMatrix();
@@ -100,7 +101,7 @@ public class OrderedHopperGUI extends GuiContainer{
                 GlStateManager.disableLighting();
                 mc.getTextureManager().bindTexture(background);
                 GlStateManager.color(1.0F, 1.0F, 1.0F, 0.6F);
-                drawTexturedModalRect( slotposX, slotposY, (int) slotpositions.get(i).getKey(), (int) slotpositions.get(i).getValue(), 16, 16);
+                drawTexturedModalRect( slotposX, slotposY, (int) slotpositions.get(i).getX(), (int) slotpositions.get(i).getY(), 16, 16);
                 GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
                 GlStateManager.disableBlend();
                 GlStateManager.enableDepth();
