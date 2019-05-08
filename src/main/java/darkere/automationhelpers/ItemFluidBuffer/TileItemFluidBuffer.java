@@ -172,7 +172,11 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
         if (!playersToUpdate.isEmpty() && !world.isRemote) {
             FluidStack[] stacks = getStacks();
                 for (EntityPlayer player : playersToUpdate) {
-                   Messages.INSTANCE.sendTo(new TankContentPacket(stacks, this.getPos()), (EntityPlayerMP) player);
+                    if(world.getPlayerEntityByName(player.getName())!= null){
+                        Messages.INSTANCE.sendTo(new TankContentPacket(stacks, this.getPos()), (EntityPlayerMP) player);
+                    }
+                    else
+                        playersToUpdate.remove(player);
                 }
 
 
