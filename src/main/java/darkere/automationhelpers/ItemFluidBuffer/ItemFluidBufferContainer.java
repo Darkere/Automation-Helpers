@@ -34,7 +34,7 @@ public class ItemFluidBufferContainer extends Container {
             for (int col = 0; col < 9; ++col) {
                 int x = topleftinvslotx + col * 18;
                 int y = topleftinvsloty +row * 18;
-                this.addSlotToContainer(new Slot(playerInventory, col + row * 9 + 10, x, y));
+                this.addSlotToContainer(new Slot(playerInventory, col + row * 9 + 9, x, y));
             }
         }
 
