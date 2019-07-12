@@ -38,7 +38,7 @@ repositories {
 	}
 }
 
-version = "1.0.1"
+version = "1.0.2"
 group= "darkere.automationhelpers"
 archivesBaseName = "automationhelpers"
 
@@ -51,7 +51,7 @@ minecraft {
     useDepAts = true
     mappings = "stable_39"
 
-    replaceIn "RS.java"
+    replaceIn "automationhelpers.java"
     replace "@version@", project.version
 }
 
