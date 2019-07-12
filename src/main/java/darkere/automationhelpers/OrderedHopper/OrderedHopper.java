@@ -22,28 +22,39 @@ import javax.annotation.Nullable;
 
 public class OrderedHopper extends Block implements ITileEntityProvider {
 
-    public static final int GUI_ID = 1;
+    private static final int GUI_ID = 1;
     public static final ResourceLocation RLOrderedHopper = new ResourceLocation(automationhelpers.MODID, "orderedhopper");
 
     public OrderedHopper() {
         super(Material.IRON);
         setRegistryName(RLOrderedHopper);
-        setTranslationKey(automationhelpers.MODID+".orderedhopper");
-        setHarvestLevel("pickaxe",2);
-        setHardness(10);
+        setTranslationKey(automationhelpers.MODID + ".OrderedHopper");
+        setHarvestLevel("pickaxe", 1);
+        setHardness(7);
 
     }
 
     @Override
-    public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
-        TileOrderedHopper te =  (TileOrderedHopper) worldIn.getTileEntity(pos);
-        te.redstoneControl();
-        te.setActive();
-
-        super.neighborChanged(state, worldIn, pos, blockIn, fromPos);
+    public boolean hasComparatorInputOverride(IBlockState state) {
+        return true;
     }
 
+    @Override
+    public int getComparatorInputOverride(IBlockState blockState, World worldIn, BlockPos pos) {
+        if (worldIn.isRemote) return super.getComparatorInputOverride(blockState, worldIn, pos);
+        TileEntity tile = worldIn.getTileEntity(pos);
+        return tile instanceof TileOrderedHopper ? ((TileOrderedHopper) tile).getComparatorOutput() : 0;
+    }
 
+    @Override
+    public void neighborChanged(IBlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos) {
+        TileEntity te = worldIn.getTileEntity(pos);
+        if (te instanceof TileOrderedHopper) {
+            ((TileOrderedHopper) te).redstoneControl();
+            ((TileOrderedHopper) te).setActive();
+        }
+        super.neighborChanged(state, worldIn, pos, blockIn, fromPos);
+    }
 
     @Nullable
     @Override
@@ -56,15 +67,14 @@ public class OrderedHopper extends Block implements ITileEntityProvider {
         ModelLoader.setCustomModelResourceLocation(Item.getItemFromBlock(this), 0, new ModelResourceLocation(getRegistryName(), "inventory"));
 
     }
-    @Override
-    public void breakBlock(World worldIn, BlockPos pos, IBlockState state)
-    {
-            TileEntity tileentity = worldIn.getTileEntity(pos);
 
-            if (tileentity instanceof TileOrderedHopper)
-            {
-              ((TileOrderedHopper) tileentity).dropAllItems();
-            }
+    @Override
+    public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+        TileEntity tileentity = worldIn.getTileEntity(pos);
+
+        if (tileentity instanceof TileOrderedHopper) {
+            ((TileOrderedHopper) tileentity).dropAllItems();
+        }
 
         super.breakBlock(worldIn, pos, state);
     }

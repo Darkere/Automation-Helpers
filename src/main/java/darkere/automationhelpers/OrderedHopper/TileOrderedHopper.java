@@ -1,6 +1,5 @@
 package darkere.automationhelpers.OrderedHopper;
 
-import darkere.automationhelpers.Utils.MyPair;
 import darkere.automationhelpers.network.Messages;
 import darkere.automationhelpers.network.PacketFilter;
 import net.minecraft.entity.player.EntityPlayer;
@@ -14,12 +13,14 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemHandlerHelper;
 import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nonnull;
@@ -30,26 +31,28 @@ import java.util.Map;
 import java.util.Queue;
 
 public class TileOrderedHopper extends TileEntity implements ITickable {
-    public static final int SIZE = 9;
+    static final int SIZE = 9;
 
-    private ItemStack sender;
-    private int slot, foreignslot, currentslot;
+    private ItemStack stackToInsert;
+    private int slot, currentslot, count;
     private int timer;
     private int strike = 0;
-    private boolean run = false,active = true;
+    private boolean redstoneActive = false, active = true;
     private boolean set = false;
-    private boolean enoughSpace, slotfound;
-    private MyPair tempPair;
-    HashMap<Integer, ItemStack> lockedItems= new HashMap<>();
-    private Queue<MyPair> insertSlotQueue = new LinkedList<>();
+    private boolean slotfound;
+    private ItemStack tempStack;
+    private HashMap<Integer, ItemStack> lockedItems = new HashMap<>();
+    private Queue<ItemStack> insertSlotQueue = new LinkedList<>();
     private ItemStackHandler itemStackHandler;
     private Rmode currentMode = Rmode.roff;
-    private int activeTimer =0;
-    int counter;
+    private int activeTimer = 0;
+    private int counter;
+
+    public TileOrderedHopper() {
+    }
 
     {
         itemStackHandler = new ItemStackHandler(SIZE) {
-
             @Override
             public boolean isItemValid(int slot, @Nonnull ItemStack stack) {
                 if (lockedItems.containsKey(slot)) {
@@ -58,18 +61,16 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
                     } else {
                         return false;
                     }
-
                 } else {
                     return true;
                 }
-
             }
-
 
             @Override
             protected void onContentsChanged(int slot) {
                 // We need to tell the tile entity that something has changed so
                 // that the chest contents is persisted
+                world.updateComparatorOutputLevel(getPos(), null);
                 if (!active && !world.isRemote) {
                     active = true;
                 }
@@ -77,39 +78,40 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
             }
         };
     }
+
     @Override
     public void readFromNBT(NBTTagCompound compound) {
         super.readFromNBT(compound);
         if (compound.hasKey("items")) {
             itemStackHandler.deserializeNBT((NBTTagCompound) compound.getTag("items"));
         }
-        if (compound.hasKey("RedStoneMode")){
-            this.currentMode =Rmode.valueOf( compound.getString("RedStoneMode"));
+        if (compound.hasKey("RedStoneMode")) {
+            this.currentMode = Rmode.valueOf(compound.getString("RedStoneMode"));
         }
-        if (compound.hasKey("CurrentSlot")){
+        if (compound.hasKey("CurrentSlot")) {
             this.currentslot = compound.getInteger("CurrentSlot");
         }
-        if(compound.hasKey("Set")){
+        if (compound.hasKey("Set")) {
             this.set = compound.getBoolean("Set");
         }
-        if(compound.hasKey("Filter")){
+        if (compound.hasKey("Filter")) {
             NBTTagList list = compound.getTagList("Filter", Constants.NBT.TAG_COMPOUND);
             lockedItems.clear();
-            for(int i = 0; i<list.tagCount();i++){
+            for (int i = 0; i < list.tagCount(); i++) {
                 NBTTagCompound item = list.getCompoundTagAt(i);
-                lockedItems.put(item.getInteger("Slot"),new ItemStack(item));
+                lockedItems.put(item.getInteger("Slot"), new ItemStack(item));
             }
         }
 
 
-
     }
 
-    public HashMap getLockedItems() {
+    public HashMap<Integer,ItemStack> getLockedItems() {
         HashMap<Integer, ItemStack> i;
         i = (HashMap) lockedItems.clone();
         return i;
     }
+
 
     @Override
     public void onLoad() {
@@ -121,17 +123,17 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
     public NBTTagCompound writeToNBT(NBTTagCompound compound) {
 
         compound.setTag("items", itemStackHandler.serializeNBT());
-        compound.setString("RedStoneMode",currentMode.getMode());
-        compound.setBoolean("Set",set);
-        compound.setInteger("CurrentSlot",currentslot);
+        compound.setString("RedStoneMode", currentMode.getMode());
+        compound.setBoolean("Set", set);
+        compound.setInteger("CurrentSlot", currentslot);
         NBTTagList list = new NBTTagList();
-        for(Map.Entry<Integer, ItemStack> entry : lockedItems.entrySet()){
+        for (Map.Entry<Integer, ItemStack> entry : lockedItems.entrySet()) {
             NBTTagCompound comp = new NBTTagCompound();
-            comp.setInteger("Slot",entry.getKey());
+            comp.setInteger("Slot", entry.getKey());
             entry.getValue().writeToNBT(comp);
             list.appendTag(comp);
         }
-        compound.setTag("Filter",list);
+        compound.setTag("Filter", list);
         super.writeToNBT(compound);
         return compound;
     }
@@ -159,35 +161,36 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
 
     public void redstoneControl() {
         boolean redstone = world.isBlockPowered(pos);
-        switch (currentMode){
+        switch (currentMode) {
             case roff: {
-                run  = redstone ?  false : true;
+                redstoneActive = !redstone;
                 break;
             }
-            case ron:{
-                run  = redstone ?  true : false;
+            case ron: {
+                redstoneActive = redstone;
                 break;
             }
-            case on:{
-                run = true;
+            case on: {
+                redstoneActive = true;
                 break;
 
             }
-            case off:{
-                run = false;
+            case off: {
+                redstoneActive = false;
                 break;
             }
 
         }
+        active = true;
         currentslot = 0;
     }
 
     @Override
     public void update() {
-        if (run && active)
+        if (world.isRemote) return;
+        if (redstoneActive && active)
+
             runItemSender();
-
-
     }
 
     public Rmode getCurrentMode() {
@@ -205,11 +208,9 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
 
     public void dropAllItems() {
         for (slot = 0; slot < SIZE; slot++) {
-            sender = itemStackHandler.getStackInSlot(slot);
-            InventoryHelper.spawnItemStack(getWorld(), getPos().getX(), getPos().getY(), getPos().getZ(), sender);
+            stackToInsert = itemStackHandler.getStackInSlot(slot);
+            InventoryHelper.spawnItemStack(getWorld(), getPos().getX(), getPos().getY(), getPos().getZ(), stackToInsert);
         }
-
-
     }
 
     public void storeFilter(HashMap lockedItems1) {
@@ -221,90 +222,98 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
 
     private void runItemSender() {
         if (!set) {
-            if (timer <= 0 && !world.isRemote) {
-                TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.DOWN));
-                if (tile != null && tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.DOWN)) {
+            if (timer <= 0) {
+                IItemHandler handler = getOppositeItemHandler(pos, EnumFacing.DOWN);
+                if (handler != null) {
                     for (slot = currentslot; slot < SIZE; slot++) {
                         if (!itemStackHandler.getStackInSlot(slot).equals(ItemStack.EMPTY)) {
-                            sender = itemStackHandler.extractItem(slot, 1, true);
-                            IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.DOWN);
-                            int foreignslots = handler.getSlots();
-                            for (foreignslot = 0; foreignslot < foreignslots; foreignslot++) {
-                                if (handler.insertItem(foreignslot, sender, true).equals(ItemStack.EMPTY)) {
-                                    pushItems(handler, foreignslot, sender, slot);
-                                    timer = 5;
-                                    currentslot++;
-                                    return;
-                                }
+                            stackToInsert = itemStackHandler.extractItem(slot, 1, true);
+                            if (ItemHandlerHelper.insertItem(handler, stackToInsert, true).equals(ItemStack.EMPTY)) {
+                                pushItem(handler, stackToInsert, slot);
+                                timer = 10;
+                                currentslot++;
+                                return;
+
                             } // NO Free foreign slots
-                            savePerformance(40, 40, 100,false);
+                            savePerformance(40, 40, 100, false);
                             return;
                         }//Slot is empty
                         currentslot++;
                     }//All slots after current are empty
-                    if(currentslot == 0){
-                        savePerformance(20, 5, 60,true);
+                    if (currentslot == 0) {
+                        savePerformance(20, 5, 60, true);
                     }
                     currentslot = 0;
                 } else { // NO Tile Below
-                    savePerformance(0, 100, 100,true);
+                    savePerformance(0, 100, 100, true);
                 }
             } else
                 timer--;
         } else {
-            if (timer <= 0 && !world.isRemote) {
-                TileEntity tile = world.getTileEntity(pos.offset(EnumFacing.DOWN));
-                if (tile != null && tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.DOWN)) {
-                    IItemHandler handler = tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, EnumFacing.DOWN);
+            if (timer <= 0) {
+                if (!checkForFullSet()) return;
+                IItemHandler handler = getOppositeItemHandler(pos, EnumFacing.DOWN);
+                if (handler != null) {
                     counter = 0;
                     for (slot = 0; slot < SIZE; slot++) {
                         if (!itemStackHandler.getStackInSlot(slot).equals(ItemStack.EMPTY)) {
-                            sender = itemStackHandler.extractItem(slot, 1, true);
-                            int foreignslots = handler.getSlots();
-                            for (foreignslot = 0; foreignslot < foreignslots; foreignslot++) {
-                                if (handler.insertItem(foreignslot, sender, true).equals(ItemStack.EMPTY)) {
-                                    insertSlotQueue.add(new MyPair(foreignslot, sender));
-                                    slotfound = true;
-                                    break;
-                                }
-
+                            stackToInsert = itemStackHandler.extractItem(slot, 1, true);
+                            if (ItemHandlerHelper.insertItem(handler, stackToInsert, true).equals(ItemStack.EMPTY)) {
+                                insertSlotQueue.add(stackToInsert);
+                            } else {
+                                slotfound = false;
                             }
-
-                            if (!slotfound) {
-                                enoughSpace = false;
-                            }
-                        }else counter++;
+                        } else counter++;
                     }
-                    if(counter == SIZE){ //NO items to push
-                        savePerformance(40,40,100,true);
+                    if (counter == SIZE) { //NO items to push
+                        savePerformance(40, 40, 100, true);
                     }
-                    if (enoughSpace) {
+                    if (slotfound) {
                         for (slot = 0; slot < SIZE; slot++) {
                             if (!itemStackHandler.getStackInSlot(slot).equals(ItemStack.EMPTY)) {
-                                tempPair = insertSlotQueue.poll();
-                                if (tempPair != null) {
-                                    pushItems(handler, tempPair.getX(), tempPair.getStack(), slot);
+                                tempStack = insertSlotQueue.poll();
+                                if (tempStack != null) {
+                                    pushItem(handler, tempStack, slot);
                                 }
                             }
                         }
                         insertSlotQueue.clear();
-                        savePerformance(0, 30, 0,false);
+                        savePerformance(0, 30, 0, false);
                         return;
 
                     } else {//Not enough Space for insertion
-                        savePerformance(40, 40, 100,false);
-                        enoughSpace = true;
+                        savePerformance(40, 40, 100, false);
+                        slotfound = true;
                         return;
                     }
                     //Nothing in there
                 }//NO Tile below
-                savePerformance(0, 100, 100,true);
+                savePerformance(0, 100, 100, true);
             }
             timer--;
         }
     }
 
-    private void savePerformance(int numberOfStrikes, int timeramount, int punishamount,boolean deactivate) {
+    private boolean checkForFullSet() {
+        if (lockedItems.isEmpty()) return true;
+        boolean found = true;
+        for (Map.Entry<Integer, ItemStack> entry : lockedItems.entrySet()) {
+            if (itemStackHandler.getStackInSlot(entry.getKey()).getCount() < 1) {
+                found = false;
+            }
+        }
+        return found;
+    }
+
+    private IItemHandler getOppositeItemHandler(BlockPos pos, EnumFacing facing) {
+        TileEntity tile = world.getTileEntity(pos.offset(facing));
+        if (tile != null && tile.hasCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, facing.getOpposite())) {
+            return tile.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, facing.getOpposite());
+        }
+        return null;
+    }
+
+    private void savePerformance(int numberOfStrikes, int timeramount, int punishamount, boolean deactivate) {
         if (strike >= 100) {
             timer = punishamount;
             strike = 0;
@@ -312,19 +321,19 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
             strike += numberOfStrikes;
             timer = timeramount;
         }
-        if(activeTimer >= 5){
+        if (activeTimer >= 5) {
             activeTimer = 0;
             active = false;
             return;
         }
-        if (deactivate){
+        if (deactivate) {
             activeTimer++;
         }
 
     }
 
-    private void pushItems(IItemHandler handler, int slotForInsertion, ItemStack sender, int slotForExtraction) {
-        handler.insertItem(slotForInsertion, sender, false);
+    private void pushItem(IItemHandler handler, ItemStack stackToInsert, int slotForExtraction) {
+        ItemHandlerHelper.insertItem(handler, stackToInsert, false);
         itemStackHandler.extractItem(slotForExtraction, 1, false);
         strike = 0;
     }
@@ -348,7 +357,9 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
         currentMode = mode;
         redstoneControl();
     }
-    public @Nonnull NBTTagCompound getUpdateTag() {
+
+    public @Nonnull
+    NBTTagCompound getUpdateTag() {
         return writeToNBT(super.getUpdateTag());
     }
 
@@ -367,7 +378,17 @@ public class TileOrderedHopper extends TileEntity implements ITickable {
     public void setActive() {
         active = true;
     }
-    public boolean isActive(){
-        return run && active;
+
+    public int getComparatorOutput() {
+        count = 0;
+        for (int i = 0; i < SIZE; i++) {
+            if (itemStackHandler.getStackInSlot(i).isEmpty()) continue;
+            count += itemStackHandler.getStackInSlot(i).getCount();
+        }
+        if (count == 0) return 0;
+        float x = (float) count / ((float) SIZE * itemStackHandler.getSlotLimit(0));
+        float y = 15 * x;
+        return (int) Math.max(1, y);
+
     }
 }

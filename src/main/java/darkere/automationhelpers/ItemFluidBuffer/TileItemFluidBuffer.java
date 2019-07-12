@@ -4,6 +4,7 @@ import darkere.automationhelpers.network.Messages;
 import darkere.automationhelpers.network.TankContentPacket;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.network.NetworkManager;
@@ -21,6 +22,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -43,6 +45,7 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
             protected void onContentsChanged(int slot) {
                 // We need to tell the tile entity that something has changed so
                 // that the chest contents is persisted
+                world.updateComparatorOutputLevel(getPos(), null);
                 TileItemFluidBuffer.this.markDirty();
             }
         };
@@ -64,12 +67,14 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
 
                 @Override
                 protected void onContentsChanged() {
+                    world.updateComparatorOutputLevel(getPos(), null);
                     TileItemFluidBuffer.this.markDirty();
                 }
             };
 
         }
     }
+
     @Override
     public boolean hasCapability(Capability<?> capability, EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
@@ -81,6 +86,7 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
 
         return super.hasCapability(capability, facing);
     }
+
     @Override
     public <T> T getCapability(Capability<T> capability, EnumFacing facing) {
         if (capability == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
@@ -139,6 +145,13 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
         readFromNBT(packet.getNbtCompound());
     }
 
+    public void dropAllItems() {
+        for (int slot = 0; slot < SIZE; slot++) {
+            if (!itemStackHandler.getStackInSlot(slot).isEmpty())
+                InventoryHelper.spawnItemStack(getWorld(), getPos().getX(), getPos().getY(), getPos().getZ(), itemStackHandler.getStackInSlot(slot));
+        }
+    }
+
     public FluidStack getFluid(int tanknumber) {
         return tanks[tanknumber].getFluid();
     }
@@ -171,14 +184,12 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
     public void update() {
         if (!playersToUpdate.isEmpty() && !world.isRemote) {
             FluidStack[] stacks = getStacks();
-                for (EntityPlayer player : playersToUpdate) {
-                    if(world.getPlayerEntityByName(player.getName())!= null){
-                        Messages.INSTANCE.sendTo(new TankContentPacket(stacks, this.getPos()), (EntityPlayerMP) player);
-                    }
-                    else
-                        playersToUpdate.remove(player);
-                }
-
+            for (EntityPlayer player : playersToUpdate) {
+                if (world.getPlayerEntityByName(player.getName()) != null) {
+                    Messages.INSTANCE.sendTo(new TankContentPacket(stacks, this.getPos()), (EntityPlayerMP) player);
+                } else
+                    playersToUpdate.remove(player);
+            }
 
 
         }
@@ -195,8 +206,26 @@ public class TileItemFluidBuffer extends TileEntity implements ITickable {
     public void stopUpdating(EntityPlayer player) {
         playersToUpdate.remove(player);
     }
+
     public boolean canInteractWith(EntityPlayer playerIn) {
         // If we are too far away from this tile entity you cannot use it
         return !isInvalid() && playerIn.getDistanceSq(pos.add(0.5D, 0.5D, 0.5D)) <= 64D;
+    }
+
+    public int getComparatorOutput() {
+        float itemCount = 0;
+        for (int i = 0; i < SIZE; i++) {
+            if (itemStackHandler.getStackInSlot(i).isEmpty()) continue;
+            itemCount += itemStackHandler.getStackInSlot(i).getCount();
+        }
+        float itemPerc = itemCount / ((float) SIZE * itemStackHandler.getSlotLimit(0));
+        float fluidCount = 0;
+        for (FluidTank ta : tanks) {
+            fluidCount += ta.getFluidAmount();
+        }
+        float fluidPerc = fluidCount / (NUMBEROFTANKS * CAPACITY);
+        float perc = Math.max(fluidPerc,itemPerc);
+        if (itemCount == 0 && fluidCount == 0) return 0;
+        return (int) Math.max(1, perc * 15);
     }
 }
